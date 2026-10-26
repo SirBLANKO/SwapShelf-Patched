@@ -6,7 +6,7 @@
 
 **Impact:** Any registered user can grant themselves staff status and access the department desk's restricted information. Staff status also satisfies Django admin's staff-status requirement, but it does not automatically grant superuser status or permissions to manage every model.
 
-**Live demo:** A hosted SwapShelf URL has not been provided. The verification described below was performed locally using Django's test client.
+**Live demo:** https://swapshelf-patched-x104.onrender.com
 
 ## Steps to reproduce
 
