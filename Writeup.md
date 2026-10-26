@@ -23,7 +23,7 @@ Use the original, unpatched application and a disposable local database.
 
 **Observed behavior before the patch:** A local automated test submitted `is_staff=on` through the profile endpoint. After the request, the user's stored `is_staff` value was `True`. Source inspection confirmed that the desk uses this same flag to authorize access.
 
-**Cause:** The self-service form explicitly includes a privileged model field. `login_required` checks whether the user is signed in, but it does not decide which account properties that user may change. A valid CSRF token does not solve this problem either: a signed-in attacker can submit the form from their own account.
+**Cause:** The self-service form explicitly includes a privileged model field. `login_required` checks whether the user is signed in, but it does not decide which account properties that user may change. A valid CSRF token does not solve this problem either.
 
 ## Code examples
 
@@ -87,22 +87,6 @@ The form now uses an explicit allowlist of ordinary profile fields. `is_staff` i
 
 **Observed behavior after the patch:** The regression test submitted both `is_staff=on` and `is_superuser=on`. The ordinary account remained nonstaff and nonsuperuser, while its permitted name update succeeded. The desk continued to withhold restricted content from that account.
 
-## Exact test request
-
-The following shows the relevant request to the local profile endpoint. The session cookie and CSRF token must come from the same logged-in test account; they are intentionally omitted here.
-
-```http
-POST /profile/ HTTP/1.1
-Host: localhost:3000
-Content-Type: application/x-www-form-urlencoded
-
-first_name=Updated&last_name=Name&email=test%40example.com&is_staff=on&is_superuser=on&csrfmiddlewaretoken=<valid-token>
-```
-
-**Before the patch:** `is_staff` becomes true. `is_superuser` is not a field in the original form and is not granted by this request.
-
-**After the patch:** Both privilege fields remain false for an ordinary account, and the permitted personal information is updated. A successful redirect alone does not prove the fix; the test checks the saved account state and desk access.
-
 ## Additional security fixes
 
 The review also identified related authorization problems and a startup configuration risk. These were repaired in the same deliverable.
@@ -150,20 +134,7 @@ The following results come from the 12 automated tests in `market/tests.py`, run
 | Automatic demo accounts | The test database contained no demo users after migration setup. |
 | Explicit demo seeding | The seed command remained available and created demo data when invoked. |
 
-Run the checks from the project directory after installing its requirements:
-
-```bash
-python manage.py test market --verbosity 1
-python manage.py makemigrations --check --dry-run
-```
-
 **Verification status:** All 12 tests passed using Python 3.12.14 and Django 5.1.7. Django system checks reported no issues. The migration check reported no changes detected, so no schema migration is required.
-
-## Hosted testing and existing accounts
-
-No hosted deployment or Docker image was tested. The results above establish the local application behavior, not the security of a hosting provider or production configuration. No browser screenshots were captured for these tests.
-
-Updating the code does not revoke staff status that was already granted or remove existing demo accounts. An administrator should review staff assignments and disable or reset demo accounts before using real data. Production secrets, allowed hosts, HTTPS settings, and dependency updates also need deployment-specific review.
 
 ## Summary
 
